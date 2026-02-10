@@ -1,0 +1,146 @@
+-- [[ FLASH HUB - CYBER EDITION ]] --
+local player = game.Players.LocalPlayer
+local pgui = player:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+if pgui:FindFirstChild("FlashHub") then pgui.FlashHub:Destroy() end
+
+-- --- UI CONSTRUCTION ---
+local ScreenGui = Instance.new("ScreenGui", pgui)
+ScreenGui.Name = "FlashHub"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 220, 0, 90)
+MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 10)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+
+-- Bordure Néon
+local UIStroke = Instance.new("UIStroke", MainFrame)
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(0, 255, 255)
+UIStroke.Transparency = 0.5
+
+-- Effet de Scan (Ligne qui passe)
+local ScanLine = Instance.new("Frame", MainFrame)
+ScanLine.Size = UDim2.new(1, 0, 0, 2)
+ScanLine.Position = UDim2.new(0, 0, -0.1, 0)
+ScanLine.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+ScanLine.BackgroundTransparency = 0.5
+ScanLine.BorderSizePixel = 0
+
+task.spawn(function()
+    while true do
+        ScanLine.Position = UDim2.new(0, 0, -0.1, 0)
+        TweenService:Create(ScanLine, TweenInfo.new(2, Enum.EasingStyle.Linear), {Position = UDim2.new(0, 0, 1.1, 0)}):Play()
+        task.wait(2.1)
+    end
+end)
+
+local StatusLabel = Instance.new("TextLabel", MainFrame)
+StatusLabel.Size = UDim2.new(1, 0, 0.6, 0)
+StatusLabel.Position = UDim2.new(0, 0, 0.1, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "READY TO FLASH"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.Font = Enum.Font.Code
+StatusLabel.TextSize = 18
+
+local SubLabel = Instance.new("TextLabel", MainFrame)
+SubLabel.Size = UDim2.new(1, 0, 0.3, 0)
+SubLabel.Position = UDim2.new(0, 0, 0.6, 0)
+SubLabel.BackgroundTransparency = 1
+SubLabel.Text = "[ HOLD F ]"
+SubLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+SubLabel.Font = Enum.Font.Code
+SubLabel.TextSize = 12
+
+-- --- LOGIQUE ---
+local isHolding = false
+local uuid = "d80e2217-36b8-4bdc-9a46-2281c6f70b28"
+local data = string.rep("?", 8000)
+local lastSafePos = nil
+
+local remote = nil
+for _, v in ipairs(game:GetDescendants()) do
+    if v:IsA("RemoteEvent") and v.Name ~= "friendmain" and v.Name ~= "ping" then
+        if not v:GetFullName():lower():find("replicatedstorage") then
+            remote = v
+            break
+        end
+    end
+end
+
+-- --- EFFETS VISUELS ---
+local function SetActiveEffect(active)
+    if active then
+        StatusLabel.Text = "SYSTEM OVERLOAD"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+        UIStroke.Color = Color3.fromRGB(255, 0, 0)
+        SubLabel.Text = "STORM ACTIVE"
+        -- Petit tremblement de l'UI
+        task.spawn(function()
+            while isHolding do
+                MainFrame.Position = UDim2.new(0.05, math.random(-2,2), 0.4, math.random(-2,2))
+                task.wait(0.05)
+            end
+            MainFrame.Position = UDim2.new(0.05, 0, 0.4, 0)
+        end)
+    else
+        StatusLabel.Text = "READY TO FLASH"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        UIStroke.Color = Color3.fromRGB(0, 255, 255)
+        SubLabel.Text = "[ HOLD F ]"
+    end
+end
+
+-- CLAVIER
+UIS.InputBegan:Connect(function(i, g)
+    if not g and i.KeyCode == Enum.KeyCode.F then
+        isHolding = true
+        SetActiveEffect(true)
+    end
+end)
+
+UIS.InputEnded:Connect(function(i, g)
+    if i.KeyCode == Enum.KeyCode.F then
+        isHolding = false
+        SetActiveEffect(false)
+        
+        local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if root and lastSafePos then
+            root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            root.CFrame = lastSafePos 
+        end
+    end
+end)
+
+-- SPEED + TRACKING
+RunService.Heartbeat:Connect(function()
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if isHolding and root and hum then
+        if hum.MoveDirection.Magnitude > 0 then
+            root.AssemblyLinearVelocity = (hum.MoveDirection * 32) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+            lastSafePos = root.CFrame 
+        end
+    end
+end)
+
+-- LAG
+task.spawn(function()
+    while true do
+        if isHolding and remote then
+            pcall(function() remote:FireServer(uuid, data) end)
+            task.wait(0.01)
+        else
+            task.wait()
+        end
+    end
+end)
