@@ -1,0 +1,188 @@
+-- [[ N12S HUB - REBORN ]]
+-- Full UI Remake - High Performance | Design by N12S
+
+local players = game:GetService("Players")
+local lp = players.LocalPlayer
+local rs = game:GetService("RunService")
+local ts = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- ======================
+-- CONFIGURATION
+-- ======================
+local HITBOX_SIZE = Vector3.new(18,18,18)
+local DEFAULT_SIZE = Vector3.new(2,2,1)
+local N12S_Settings = { Fling = false, Hitbox = false, ESP = false }
+
+-- ======================
+-- ESP SYSTEM
+-- ======================
+local function handleESP(char, state)
+    local existing = char:FindFirstChild("N12S_Neon")
+    if existing then existing:Destroy() end
+    if state then
+        local hl = Instance.new("Highlight", char)
+        hl.Name = "N12S_Neon"
+        hl.FillColor = Color3.fromRGB(255, 130, 0) -- Orange N12S
+        hl.OutlineColor = Color3.new(1, 1, 1)
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    end
+end
+
+-- ======================
+-- CLEAN OLD INTERFACE
+-- ======================
+if lp.PlayerGui:FindFirstChild("N12S_Reborn") then lp.PlayerGui.N12S_Reborn:Destroy() end
+
+-- ======================
+-- MODERN GUI CREATION
+-- ======================
+local ScreenGui = Instance.new("ScreenGui", lp.PlayerGui)
+ScreenGui.Name = "N12S_Reborn"
+ScreenGui.ResetOnSpawn = false
+
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.fromOffset(280, 380)
+Main.Position = UDim2.fromScale(0.5, 0.5)
+Main.AnchorPoint = Vector2.new(0.5, 0.5)
+Main.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
+Main.BorderSizePixel = 0
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 20)
+
+-- Glow & Border
+local Stroke = Instance.new("UIStroke", Main)
+Stroke.Thickness = 2
+Stroke.Color = Color3.fromRGB(255, 130, 0)
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+-- Header
+local Header = Instance.new("Frame", Main)
+Header.Size = UDim2.new(1, 0, 0, 60)
+Header.BackgroundTransparency = 1
+
+local Title = Instance.new("TextLabel", Header)
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.Text = "N12S HUB"
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 24
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundTransparency = 1
+
+local Line = Instance.new("Frame", Main)
+Line.Size = UDim2.new(0.8, 0, 0, 1)
+Line.Position = UDim2.new(0.1, 0, 0, 60)
+Line.BackgroundColor3 = Color3.fromRGB(255, 130, 0)
+Line.BorderSizePixel = 0
+Line.BackgroundTransparency = 0.5
+
+-- Container
+local Holder = Instance.new("Frame", Main)
+Holder.Size = UDim2.new(1, 0, 1, -130)
+Holder.Position = UDim2.new(0, 0, 0, 75)
+Holder.BackgroundTransparency = 1
+
+local Layout = Instance.new("UIListLayout", Holder)
+Layout.Padding = UDim.new(0, 12)
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- ======================
+-- BUTTON BUILDER
+-- ======================
+local function createModernButton(text, callback, isDanger)
+    local Btn = Instance.new("TextButton", Holder)
+    Btn.Size = UDim2.new(0.85, 0, 0, 45)
+    Btn.BackgroundColor3 = isDanger and Color3.fromRGB(40, 15, 15) or Color3.fromRGB(20, 20, 25)
+    Btn.Text = text:upper()
+    Btn.Font = Enum.Font.GothamBold
+    Btn.TextSize = 13
+    Btn.TextColor3 = isDanger and Color3.fromRGB(255, 80, 80) or Color3.new(1, 1, 1)
+    Btn.AutoButtonColor = false
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 12)
+    
+    local BStroke = Instance.new("UIStroke", Btn)
+    BStroke.Thickness = 1
+    BStroke.Color = isDanger and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(45, 45, 50)
+
+    local active = false
+    Btn.MouseButton1Click:Connect(function()
+        if not isDanger then
+            active = not active
+            ts:Create(Btn, TweenInfo.new(0.3), {BackgroundColor3 = active and Color3.fromRGB(255, 130, 0) or Color3.fromRGB(20, 20, 25)}):Play()
+            ts:Create(Btn, TweenInfo.new(0.3), {TextColor3 = active and Color3.new(0, 0, 0) or Color3.new(1, 1, 1)}):Play()
+            callback(active)
+        else
+            callback()
+        end
+    end)
+end
+
+-- ======================
+-- ACTIONS
+-- ======================
+createModernButton("Fling Kill", function(state)
+    N12S_Settings.Fling = state
+end)
+
+createModernButton("Hitbox God", function(state)
+    N12S_Settings.Hitbox = state
+end)
+
+createModernButton("Neon Vision (ESP)", function(state)
+    N12S_Settings.ESP = state
+    for _, p in pairs(players:GetPlayers()) do
+        if p ~= lp and p.Character then handleESP(p.Character, state) end
+    end
+end)
+
+-- Exit Button
+local ExitBtn = Instance.new("TextButton", Main)
+ExitBtn.Size = UDim2.new(0.85, 0, 0, 40)
+ExitBtn.Position = UDim2.new(0.075, 0, 1, -55)
+ExitBtn.BackgroundColor3 = Color3.fromRGB(30, 10, 10)
+ExitBtn.Text = "FERMER N12S"
+ExitBtn.Font = Enum.Font.GothamBold
+ExitBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+ExitBtn.TextSize = 12
+Instance.new("UICorner", ExitBtn).CornerRadius = UDim.new(0, 10)
+ExitBtn.MouseButton1Click:Connect(function()
+    for _, p in pairs(players:GetPlayers()) do if p.Character then handleESP(p.Character, false) end end
+    ScreenGui:Destroy()
+end)
+
+-- ======================
+-- PHYSICS LOOPS
+-- ======================
+rs.Heartbeat:Connect(function()
+    if N12S_Settings.Fling and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = lp.Character.HumanoidRootPart
+        local oldV = hrp.Velocity
+        hrp.Velocity = Vector3.new(8e5, 8e5, 8e5)
+        rs.RenderStepped:Wait()
+        hrp.Velocity = oldV
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.3) do
+        for _, p in pairs(players:GetPlayers()) do
+            if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local h = p.Character.HumanoidRootPart
+                if N12S_Settings.Hitbox then
+                    h.Size = HITBOX_SIZE
+                    h.Transparency = 0.7
+                    h.CanCollide = false
+                else
+                    h.Size = DEFAULT_SIZE
+                    h.Transparency = 1
+                    h.CanCollide = true
+                end
+            end
+        end
+    end
+end)
+
+-- Drag System
+local drag, dStart, sPos
+Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then drag = true dStart = i.Position sPos = Main.Position end end)
+UserInputService.InputChanged:Connect(function(i) if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - dStart Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y) end end)
+UserInputService.InputEnded:Connect(function() drag = false end)
